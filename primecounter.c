@@ -9,13 +9,13 @@
 
 #define SIEVE_SIZE 32768
 
-typedef struct
+struct prime
 {
     uint32_t col    : 29;
     uint32_t row    :  3;
     uint32_t step   :  3;
     uint32_t offset : 29;
-} prime_t;
+};
 
 const uint32_t w[8] = { 1, 7, 11, 13, 17, 19, 23, 29 };
 
@@ -77,22 +77,20 @@ uint32_t count_bits(uint8_t* a, uint32_t start, uint32_t end)
     return result;
 }
 
-prime_t create_prime(uint32_t col, uint32_t row, uint32_t step, uint32_t offset)
+void init_prime(struct prime* p,
+                uint32_t col, uint32_t row,
+                uint32_t step, uint32_t offset)
 {
-    prime_t p;
-
-    p.col    = col;
-    p.row    = row;
-    p.step   = step;
-    p.offset = offset;
-
-    return p;
+    p->col    = col;
+    p->row    = row;
+    p->step   = step;
+    p->offset = offset;
 }
 
-prime_t* bootstrap(uint32_t upper, uint32_t* cnt)
+struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
 {
-    prime_t* primes;
-    prime_t* trimmed;
+    struct prime* primes;
+    struct prime* trimmed;
     uint8_t* sieve;
     uint32_t base[8];
     uint32_t jump[8];
@@ -150,7 +148,7 @@ prime_t* bootstrap(uint32_t upper, uint32_t* cnt)
                 k = (k + 1) % 8;
             }
 
-            primes[primes_idx++] = create_prime(i, j, k, current - sieve_size);
+            init_prime(&primes[primes_idx++], i, j, k, current - sieve_size);
         }
 
         /* Updates the base values for the increments. */
@@ -165,9 +163,11 @@ prime_t* bootstrap(uint32_t upper, uint32_t* cnt)
             if (!(sieve[i] & (1 << j))) {
                 continue;
             }
+
             val = 30 * i + w[j];
             next = i * (val + w[j]) + z[j]; /* Starts at the square. */
-            primes[primes_idx++] = create_prime(i, j, j, next - sieve_size);
+
+            init_prime(&primes[primes_idx++], i, j, j, next - sieve_size);
         }
     }
 
@@ -258,7 +258,7 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
 }
 
 void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
-                   prime_t* primes, uint32_t primes_size)
+                   struct prime* primes, uint32_t primes_size)
 {   
     uint32_t jump[8];
     uint32_t current;
@@ -294,7 +294,7 @@ void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
 
 int32_t sieve(uint32_t upper, uint32_t sieve_size)
 {
-    prime_t* primes;
+    struct prime* primes;
     uint8_t* mask;
     uint8_t* sieve;
     int32_t result;
@@ -349,7 +349,7 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
     /* No underflow since the above loop runs at least once. */
     end = limit - (start - sieve_size);
 
-    /* Excludes excess primes from the last byte. */
+    /* Excludes excess primes found in the last byte. */
     for (i = 8; i--;) {
         if (!(sieve[end - 1] & (1 << i))) {
             continue;
@@ -361,7 +361,7 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
         --result;
     }
 
-    /* Excludes excess primes from the rest of the last segment. */
+    /* Excludes excess primes found in the rest of the last segment. */
     result -= count_bits(sieve, end, sieve_size);
 
     free(sieve);
@@ -373,7 +373,7 @@ out:
     return result;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
     int32_t ans;
     uint32_t upper;
