@@ -231,7 +231,7 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
     uint32_t mask_remainder;
     uint32_t sieve_remainder;
     uint32_t end;
-    uint32_t mi;
+    uint32_t mi, mii;
     uint32_t i, j;
 
     /* 
@@ -242,16 +242,19 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
     for (i = 0; i < sieve_size; i += mask_remainder) {
         mask_remainder = mask_size - mi;
         sieve_remainder = sieve_size - i;
-        end = (mask_remainder < sieve_remainder)
-            ? i + mask_remainder : i + sieve_remainder;
-
-        for (j = i; j < end; ++j) {
-            sieve[j] = mask[mi++];
+        if (mask_remainder < sieve_remainder) {
+            end = mask_remainder;
+            mii = 0;
+        } else {
+            end = sieve_remainder;
+            mii = mi + end;
         }
 
-        if (mi == mask_size) {
-            mi = 0;
+        for (j = 0; j < end; ++j) {
+            sieve[i + j] = mask[mi + j];
         }
+
+        mi = mii;
     }
 
     *mask_idx = mi;
