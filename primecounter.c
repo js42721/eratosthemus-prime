@@ -195,7 +195,7 @@ uint8_t* magic_mask(uint32_t* mask_size)
 
     lcm = 1;
     for (i = 1; i <= MAGIC_MASK_PRIMES; ++i) {
-        lcm *= w[i]; /* 7 * 11 * 13 * ... * 29 */
+        lcm *= w[i];
     }
 
     mask = malloc(lcm * sizeof(*mask));
@@ -264,7 +264,6 @@ void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
     uint32_t t_offset;
     uint32_t i, j;
 
-    /* Skips the primes that have already been taken care of by the mask. */
     for (i = MAGIC_MASK_PRIMES; i < primes_size; ++i) {
         current = primes[i].offset;
         if (current >= sieve_size) { /* No multiples in the current segment. */
