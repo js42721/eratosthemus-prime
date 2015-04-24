@@ -165,7 +165,7 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
             }
 
             val = 30 * i + w[j];
-            next = i * (val + w[j]) + z[j]; /* Starts at the square. */
+            next = i * (val + w[j]) + z[j];
 
             init_prime(&primes[primes_idx++], i, j, j, next - sieve_size);
         }
@@ -188,7 +188,6 @@ cleanup_sieve:
 uint8_t* magic_mask(uint32_t* mask_size)
 {
     uint8_t* mask;
-    uint32_t jump[8];
     uint32_t lcm;
     uint32_t t_offset;
     uint32_t current;
@@ -209,15 +208,11 @@ uint8_t* magic_mask(uint32_t* mask_size)
 
     for (i = 1; i <= MAGIC_MASK_PRIMES; ++i) {
         t_offset = 8 * i;
-        for (j = 0; j < 8; ++j) {
-            jump[j] = d[t_offset + j];
-        }
-
-        j = 0;
         current = 0;
+        j = 0;
         do {
             mask[current] &= m[t_offset + j];
-            current += jump[j];
+            current += d[t_offset + j];
             j = (j + 1) % 8;
         } while (current < lcm);
     }
