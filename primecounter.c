@@ -1,5 +1,5 @@
+#include <inttypes.h>
 #include <math.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,7 +106,7 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
     double log_upper;
 
     sieve_size = upper / 30 + 1;
-    sieve = malloc(sieve_size * sizeof(*sieve));
+    sieve = malloc(sieve_size);
     if (!sieve) {
         return NULL;
     }
@@ -124,7 +124,7 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
     primes_idx = 0;
     sieve_end = sqrt(upper) / 30;
     memset(base, 0, sizeof(base));
-    memset(sieve, 0xff, sieve_size * sizeof(*sieve));
+    memset(sieve, 0xff, sieve_size);
     sieve[0] = 0xfe; /* Marks 1 as not prime. */
 
     for (i = 0; i <= sieve_end; ++i) {
@@ -198,13 +198,13 @@ uint8_t* magic_mask(uint32_t* mask_size)
         lcm *= w[i];
     }
 
-    mask = malloc(lcm * sizeof(*mask));
+    mask = malloc(lcm);
     if (!mask) {
         return NULL;
     }
 
     *mask_size = lcm;
-    memset(mask, 0xff, lcm * sizeof(*mask));
+    memset(mask, 0xff, lcm);
 
     for (i = 1; i <= MAGIC_MASK_PRIMES; ++i) {
         t_offset = 8 * i;
@@ -225,9 +225,8 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
 {
     uint32_t mask_remainder;
     uint32_t sieve_remainder;
-    uint32_t end;
-    uint32_t mi, mii;
-    uint32_t i, j;
+    uint32_t mi;
+    uint32_t i;
 
     /* 
      * Note that if the mask is applied to the byte containing the mask primes,
@@ -238,18 +237,12 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
         mask_remainder = mask_size - mi;
         sieve_remainder = sieve_size - i;
         if (mask_remainder < sieve_remainder) {
-            end = mask_remainder;
-            mii = 0;
+            memcpy(&sieve[i], &mask[mi], mask_remainder);
+            mi = 0;
         } else {
-            end = sieve_remainder;
-            mii = mi + end;
+            memcpy(&sieve[i], &mask[mi], sieve_remainder);
+            mi += sieve_remainder;
         }
-
-        for (j = 0; j < end; ++j) {
-            sieve[i + j] = mask[mi + j];
-        }
-
-        mi = mii;
     }
 
     *mask_idx = mi;
@@ -322,7 +315,7 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
         goto cleanup_mask;
     }
 
-    sieve = malloc(sieve_size * sizeof(*sieve));
+    sieve = malloc(sieve_size);
     if (!sieve) {
         goto cleanup_primes;
     }
@@ -382,7 +375,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    if (!sscanf(argv[1], "%lu", (unsigned long*)&upper)) {
+    if (!sscanf(argv[1], "%"SCNu32, &upper)) {
         fprintf(stderr, "Invalid argument\n");
         return EXIT_FAILURE;
     }
@@ -400,7 +393,7 @@ int main(int argc, char** argv)
 
     elapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
-    printf("pi(%lu) = %ld\n", (unsigned long)upper, (long)ans);
+    printf("pi(%"PRIu32") = %"PRId32"\n", upper, ans);
     printf("Elapsed time: %f s\n", elapsed);
 
     return 0;
