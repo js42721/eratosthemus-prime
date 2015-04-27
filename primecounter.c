@@ -17,12 +17,6 @@ struct prime
     uint32_t offset : 29;
 };
 
-const uint32_t w[8] = { 1, 7, 11, 13, 17, 19, 23, 29 };
-
-const uint32_t t[8] = { 6, 4, 2, 4, 2, 4, 6, 2 };
-
-const uint32_t z[8] = { 0, 1, 4, 5, 9, 12, 17, 28 };
-
 const uint8_t m[64] =
 {
     0xfe, 0xfd, 0xfb, 0xf7, 0xef, 0xdf, 0xbf, 0x7f,
@@ -34,6 +28,12 @@ const uint8_t m[64] =
     0xbf, 0xfb, 0xf7, 0x7f, 0xfe, 0xef, 0xdf, 0xfd,
     0x7f, 0xbf, 0xdf, 0xef, 0xf7, 0xfb, 0xfd, 0xfe
 };
+
+const uint32_t w[8] = { 1, 7, 11, 13, 17, 19, 23, 29 };
+
+const uint32_t t[8] = { 6, 4, 2, 4, 2, 4, 6, 2 };
+
+const uint32_t z[8] = { 0, 1, 4, 5, 9, 12, 17, 28 };
 
 const uint32_t d[64] =
 {
@@ -131,6 +131,7 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
             }
 
             t_offset = 8 * j;
+            
             /* Computes the increments. */
             for (k = 0; k < 8; ++k) {
                 jump[k] = i * t[k] + d[t_offset + k];
@@ -154,9 +155,7 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
             if (!(sieve[i] & (1 << j))) {
                 continue;
             }
-
             next = i * (30 * i + 2 * w[j]) + z[j];
-
             init_prime(&primes[primes_idx++], i, j, j, next - sieve_size);
         }
     }
@@ -256,6 +255,7 @@ void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
 
         col = primes[i].col;
         t_offset = 8 * primes[i].row;
+        
         for (j = 0; j < 8; ++j) {
             jump[j] = col * t[j] + d[t_offset + j];
         }
