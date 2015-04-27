@@ -92,14 +92,12 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
     struct prime* primes;
     struct prime* trimmed;
     uint8_t* sieve;
-    uint32_t base[8];
     uint32_t jump[8];
     uint32_t pi_upper;
     uint32_t primes_idx;
     uint32_t sieve_size;
     uint32_t sieve_end;
     uint32_t t_offset;
-    uint32_t val;
     uint32_t current;
     uint32_t next;
     uint32_t i, j, k;
@@ -123,7 +121,6 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
 
     primes_idx = 0;
     sieve_end = sqrt(upper) / 30;
-    memset(base, 0, sizeof(base));
     memset(sieve, 0xff, sieve_size);
     sieve[0] = 0xfe; /* Marks 1 as not prime. */
 
@@ -136,11 +133,11 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
             t_offset = 8 * j;
             /* Computes the increments. */
             for (k = 0; k < 8; ++k) {
-                jump[k] = base[k] + d[t_offset + k];
+                jump[k] = i * t[k] + d[t_offset + k];
             }
-            
-            val = 30 * i + w[j];
-            current = i * (val + w[j]) + z[j]; /* Starts at the square. */
+
+            /* Starts at the square. */
+            current = i * (30 * i + 2 * w[j]) + z[j];
             k = j;
             while (current < sieve_size) {
                 sieve[current] &= m[t_offset + k];
@@ -150,22 +147,15 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
 
             init_prime(&primes[primes_idx++], i, j, k, current - sieve_size);
         }
-
-        /* Updates the base values for the increments. */
-        for (j = 0; j < 8; ++j) {
-            base[j] += t[j];
-        }
     }
 
-    /* Collects the remaining primes. */
     for (i = sieve_end + 1; i < sieve_size; ++i) {
         for (j = 0; j < 8; ++j) {
             if (!(sieve[i] & (1 << j))) {
                 continue;
             }
 
-            val = 30 * i + w[j];
-            next = i * (val + w[j]) + z[j];
+            next = i * (30 * i + 2 * w[j]) + z[j];
 
             init_prime(&primes[primes_idx++], i, j, j, next - sieve_size);
         }
