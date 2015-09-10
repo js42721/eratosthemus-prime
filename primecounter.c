@@ -210,7 +210,7 @@ uint8_t* magic_mask(uint32_t* mask_size)
 }
 
 void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
-                      uint8_t* mask, uint32_t mask_size, uint32_t* mask_idx)
+                      uint8_t* mask, uint32_t mask_size, uint32_t idx)
 {
     uint32_t mask_remainder;
     uint32_t sieve_remainder;
@@ -221,7 +221,7 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
      * Note that if the mask is applied to the byte containing the mask primes,
      * the mask primes will be marked as composite.
      */
-    mi = *mask_idx;
+    mi = idx % mask_size;
     for (i = 0; i < sieve_size; i += mask_remainder) {
         mask_remainder = mask_size - mi;
         sieve_remainder = sieve_size - i;
@@ -233,8 +233,6 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
             mi += sieve_remainder;
         }
     }
-
-    *mask_idx = mi;
 }
 
 void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
@@ -248,7 +246,7 @@ void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
 
     for (i = MAGIC_MASK_PRIMES; i < primes_size; ++i) {
         current = primes[i].offset;
-        if (current >= sieve_size) { /* No multiples in the current segment. */
+        if (current >= sieve_size) { /* No multiples in the segment. */
             primes[i].offset -= sieve_size;
             continue;
         }
@@ -281,7 +279,6 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
     uint32_t sqrt_upper;
     uint32_t primes_size;
     uint32_t bootstrap_end;
-    uint32_t mask_idx;
     uint32_t mask_size;
     uint32_t start;
     uint32_t limit;
@@ -312,7 +309,6 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
     
     result = primes_size + 3;
     bootstrap_end = sqrt_upper / 30 + 1;
-    mask_idx = bootstrap_end % mask_size;
     limit = upper / 30 + 1;
 
     /* 
@@ -321,7 +317,7 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
      * mask index and the offsets for the primes.
      */
     for (start = bootstrap_end; start < limit; start += sieve_size) {
-        apply_magic_mask(sieve, sieve_size, mask, mask_size, &mask_idx);
+        apply_magic_mask(sieve, sieve_size, mask, mask_size, start);
         sieve_segment(sieve, sieve_size, primes, primes_size);
         result += count_bits(sieve, 0, sieve_size);
     }
