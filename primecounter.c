@@ -217,10 +217,6 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
     uint32_t mi;
     uint32_t i;
 
-    /* 
-     * Note that if the mask is applied to the byte containing the mask primes,
-     * the mask primes will be marked as composite.
-     */
     mi = idx % mask_size;
     for (i = 0; i < sieve_size; i += mask_remainder) {
         mask_remainder = mask_size - mi;
@@ -278,7 +274,6 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
     int32_t result;
     uint32_t sqrt_upper;
     uint32_t primes_size;
-    uint32_t bootstrap_end;
     uint32_t mask_size;
     uint32_t start;
     uint32_t limit;
@@ -308,15 +303,16 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
     }
     
     result = primes_size + 3;
-    bootstrap_end = sqrt_upper / 30 + 1;
     limit = upper / 30 + 1;
 
     /* 
-     * Starts sieving from where the bootstrapping sieve left off.
-     * When adjusting the starting point, remember to also adjust the
-     * mask index and the offsets for the primes.
+     * Starts sieving from where the bootstrapping sieve ends.
+     * When adjusting the starting point, remember to also adjust the offsets
+     * for the primes. Furthermore, note that if the mask is applied to the
+     * byte containing the mask primes, the mask primes will be marked as
+     * composite.
      */
-    for (start = bootstrap_end; start < limit; start += sieve_size) {
+    for (start = sqrt_upper / 30 + 1; start < limit; start += sieve_size) {
         apply_magic_mask(sieve, sieve_size, mask, mask_size, start);
         sieve_segment(sieve, sieve_size, primes, primes_size);
         result += count_bits(sieve, 0, sieve_size);
@@ -330,7 +326,7 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
         if (!(sieve[end - 1] & (1 << i))) {
             continue;
         }
-        /* The few overflowable values aren't prime so no cast is needed. */
+        /* No cast is needed since none of the overflowing values are prime. */
         if (30 * (limit - 1) + w[i] <= upper) {
             break;
         }
