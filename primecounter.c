@@ -11,8 +11,8 @@
 
 struct prime
 {
-    uint32_t col    : 29;
-    uint32_t row    :  3;
+    uint32_t idx    : 29;
+    uint32_t bit    :  3;
     uint32_t step   :  3;
     uint32_t offset : 29;
 };
@@ -77,12 +77,11 @@ uint32_t count_bits(uint8_t* a, uint32_t start, uint32_t end)
     return result;
 }
 
-void init_prime(struct prime* p,
-                uint32_t col, uint32_t row,
+void init_prime(struct prime* p, uint32_t idx, uint32_t bit,
                 uint32_t step, uint32_t offset)
 {
-    p->col    = col;
-    p->row    = row;
+    p->idx    = idx;
+    p->bit    = bit;
     p->step   = step;
     p->offset = offset;
 }
@@ -210,30 +209,31 @@ uint8_t* magic_mask(uint32_t* mask_size)
 }
 
 void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
-                      uint8_t* mask, uint32_t mask_size, uint32_t col)
+                      uint8_t* mask, uint32_t mask_size, uint32_t idx)
 {
     uint32_t mask_remainder;
     uint32_t end;
     uint32_t mi, i;
 
-    mi = col % mask_size;
+    mi = idx % mask_size;
     mask_remainder = mask_size - mi;
-    if (mask_remainder < sieve_size) {
-        memcpy(sieve, &mask[mi], mask_remainder);
-        i = mask_remainder;
-        if (sieve_size - i > mask_size) {
-            end = sieve_size - mask_size;
-            do {
-                memcpy(&sieve[i], mask, mask_size);
-                i += mask_size;
-            } while (i < end);
-        }
-        mi = 0;
-    } else {
-        i = 0;
+    if (mask_remainder >= sieve_size) {
+        memcpy(sieve, &mask[mi], sieve_size);
+        return;
     }
 
-    memcpy(&sieve[i], &mask[mi], sieve_size - i);
+    memcpy(sieve, &mask[mi], mask_remainder);
+
+    i = mask_remainder;
+    if (sieve_size - i > mask_size) {
+        end = sieve_size - mask_size;
+        do {
+            memcpy(&sieve[i], mask, mask_size);
+            i += mask_size;
+        } while (i < end);
+    }
+
+    memcpy(&sieve[i], mask, sieve_size - i);
 }
 
 void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
@@ -241,7 +241,7 @@ void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
 {   
     uint32_t jump[8];
     uint32_t current;
-    uint32_t col;
+    uint32_t prime_idx;
     uint32_t t_offset;
     uint32_t i, j;
 
@@ -252,11 +252,11 @@ void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
             continue;
         }
 
-        col = primes[i].col;
-        t_offset = 8 * primes[i].row;
+        prime_idx = primes[i].idx;
+        t_offset = 8 * primes[i].bit;
         
         for (j = 0; j < 8; ++j) {
-            jump[j] = col * t[j] + d[t_offset + j];
+            jump[j] = prime_idx * t[j] + d[t_offset + j];
         }
 
         j = primes[i].step;
