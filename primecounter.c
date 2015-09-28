@@ -210,25 +210,30 @@ uint8_t* magic_mask(uint32_t* mask_size)
 }
 
 void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
-                      uint8_t* mask, uint32_t mask_size, uint32_t idx)
+                      uint8_t* mask, uint32_t mask_size, uint32_t col)
 {
     uint32_t mask_remainder;
-    uint32_t sieve_remainder;
-    uint32_t mi;
-    uint32_t i;
+    uint32_t end;
+    uint32_t mi, i;
 
-    mi = idx % mask_size;
-    for (i = 0; i < sieve_size; i += mask_remainder) {
-        mask_remainder = mask_size - mi;
-        sieve_remainder = sieve_size - i;
-        if (mask_remainder < sieve_remainder) {
-            memcpy(&sieve[i], &mask[mi], mask_remainder);
-            mi = 0;
-        } else {
-            memcpy(&sieve[i], &mask[mi], sieve_remainder);
-            mi += sieve_remainder;
+    mi = col % mask_size;
+    mask_remainder = mask_size - mi;
+    if (mask_remainder < sieve_size) {
+        memcpy(sieve, &mask[mi], mask_remainder);
+        i = mask_remainder;
+        if (sieve_size - i > mask_size) {
+            end = sieve_size - mask_size;
+            do {
+                memcpy(&sieve[i], mask, mask_size);
+                i += mask_size;
+            } while (i < end);
         }
+        mi = 0;
+    } else {
+        i = 0;
     }
+
+    memcpy(&sieve[i], &mask[mi], sieve_size - i);
 }
 
 void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
@@ -275,7 +280,6 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
     uint32_t sqrt_upper;
     uint32_t primes_size;
     uint32_t mask_size;
-    uint32_t start;
     uint32_t limit;
     uint32_t end;
     uint32_t i;
@@ -308,18 +312,16 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
     /* 
      * Starts sieving from where the bootstrapping sieve ends.
      * When adjusting the starting point, remember to also adjust the offsets
-     * for the primes. Furthermore, note that if the mask is applied to the
-     * byte containing the mask primes, the mask primes will be marked as
-     * composite.
+     * for the primes.
      */
-    for (start = sqrt_upper / 30 + 1; start < limit; start += sieve_size) {
-        apply_magic_mask(sieve, sieve_size, mask, mask_size, start);
+    for (i = sqrt_upper / 30 + 1; i < limit; i += sieve_size) {
+        apply_magic_mask(sieve, sieve_size, mask, mask_size, i);
         sieve_segment(sieve, sieve_size, primes, primes_size);
         result += count_bits(sieve, 0, sieve_size);
     }
 
     /* No underflow since the above loop runs at least once. */
-    end = limit - (start - sieve_size);
+    end = limit - (i - sieve_size);
 
     /* Excludes excess primes found in the last byte. */
     for (i = 8; i--;) {
