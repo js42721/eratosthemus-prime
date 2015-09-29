@@ -211,27 +211,31 @@ uint8_t* magic_mask(uint32_t* mask_size)
 void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
                       uint8_t* mask, uint32_t mask_size, uint32_t idx)
 {
-    uint32_t mask_remainder;
+    uint32_t sieve_remainder, mask_remainder;
     uint32_t end;
-    uint32_t mi, i;
+    uint32_t i;
 
-    mi = idx % mask_size;
-    mask_remainder = mask_size - mi;
+    i = idx % mask_size;
+    mask_remainder = mask_size - i;
     if (mask_remainder >= sieve_size) {
-        memcpy(sieve, &mask[mi], sieve_size);
+        memcpy(sieve, &mask[i], sieve_size);
         return;
     }
 
-    memcpy(sieve, &mask[mi], mask_remainder);
+    memcpy(sieve, &mask[i], mask_remainder);
+
+    sieve_remainder = sieve_size - mask_remainder;
+    if (sieve_remainder <= mask_size) {
+        memcpy(&sieve[mask_remainder], mask, sieve_remainder);
+        return;
+    }
 
     i = mask_remainder;
-    if (sieve_size - i > mask_size) {
-        end = sieve_size - mask_size;
-        do {
-            memcpy(&sieve[i], mask, mask_size);
-            i += mask_size;
-        } while (i < end);
-    }
+    end = sieve_size - mask_size;
+    do {
+        memcpy(&sieve[i], mask, mask_size);
+        i += mask_size;
+    } while (i < end);
 
     memcpy(&sieve[i], mask, sieve_size - i);
 }
