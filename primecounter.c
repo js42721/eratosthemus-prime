@@ -130,7 +130,7 @@ struct prime* bootstrap(uint32_t upper, uint32_t* cnt)
             }
 
             t_offset = 8 * j;
-            
+
             /* Computes the increments. */
             for (k = 0; k < 8; ++k) {
                 jump[k] = i * t[k] + d[t_offset + k];
@@ -242,7 +242,7 @@ void apply_magic_mask(uint8_t* sieve, uint32_t sieve_size,
 
 void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
                    struct prime* primes, uint32_t primes_size)
-{   
+{
     uint32_t jump[8];
     uint32_t current;
     uint32_t prime_idx;
@@ -258,7 +258,7 @@ void sieve_segment(uint8_t* sieve, uint32_t sieve_size,
 
         prime_idx = primes[i].idx;
         t_offset = 8 * primes[i].bit;
-        
+
         for (j = 0; j < 8; ++j) {
             jump[j] = prime_idx * t[j] + d[t_offset + j];
         }
@@ -309,11 +309,11 @@ int32_t sieve(uint32_t upper, uint32_t sieve_size)
     if (!sieve) {
         goto cleanup_primes;
     }
-    
+
     result = primes_size + 3;
     limit = upper / 30 + 1;
 
-    /* 
+    /*
      * Starts sieving from where the bootstrapping sieve ends.
      * When adjusting the starting point, remember to also adjust the offsets
      * for the primes.
@@ -367,7 +367,7 @@ int main(int argc, char** argv)
         fprintf(stderr, "Invalid argument\n");
         return EXIT_FAILURE;
     }
-    
+
     start = clock();
 
     ans = sieve(upper, SIEVE_SIZE);
