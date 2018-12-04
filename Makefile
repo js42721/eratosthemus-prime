@@ -1,3 +1,4 @@
+CC = gcc
 CFLAGS = -O3
 LDLIBS = -lm
 TARGET = primecounter
