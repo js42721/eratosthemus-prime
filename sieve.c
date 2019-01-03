@@ -9,13 +9,26 @@
 #include "utils.h"
 #include "wheel.h"
 
-/* pi(x) for x <= 29 */
-static const int small[30] =
+#define IS_PRIME(b, n) ((b) & (1 << (n)))
+
+/* pi(x) for x <= 29. */
+static const u32 small[30] =
 {
-    0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
-    4, 5, 5, 6, 6, 6, 6, 7, 7, 8,
-    8, 8, 8, 9, 9, 9, 9, 9, 9, 10
+    0, 0, 1, 2, 2, 3, 3, 4, 4, 4, 4, 5, 5, 6, 6,
+    6, 6, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10
 };
+
+static const u32 z[8] = { 0, 1, 4, 5, 9, 12, 17, 28 };
+
+static u32 numeric_val(u32 index, u32 bit)
+{
+    return index * 30 + wheel[bit];
+}
+
+static u32 square_index(u32 index, u32 bit)
+{
+    return index * (index * 30 + wheel[bit] * 2) + z[bit];
+}
 
 static struct prime *bootstrap(u32 upper, u32 *count)
 {
@@ -45,7 +58,7 @@ static struct prime *bootstrap(u32 upper, u32 *count)
 
     for (i = 0; i <= sieve_limit; ++i) {
         for (j = 0; j < 8; ++j) {
-            if (!is_prime(sieve[i], j))
+            if (!IS_PRIME(sieve[i], j))
                 continue;
             /* Starts at the square. */
             offset = square_index(i, j);
@@ -57,7 +70,7 @@ static struct prime *bootstrap(u32 upper, u32 *count)
 
     for (i = sieve_limit + 1; i < sieve_size; ++i) {
         for (j = 0; j < 8; ++j) {
-            if (!is_prime(sieve[i], j))
+            if (!IS_PRIME(sieve[i], j))
                 continue;
             offset = square_index(i, j);
             init_prime(&primes[pi], i, j, j, offset - sieve_size);
@@ -123,7 +136,7 @@ s32 sieve(u32 upper, u32 sieve_size)
 
     /* Excludes excess primes found in the last byte. */
     for (i = 8; i--;) {
-        if (!is_prime(sieve[last], i))
+        if (!IS_PRIME(sieve[last], i))
             continue;
         if (numeric_val(limit - 1, i) <= upper)
             break;

@@ -9,11 +9,12 @@
 #define M6 ~(1 << 6)
 #define M7 ~(1 << 7)
 
-const int wheel[8] = { 1, 7, 11, 13, 17, 19, 23, 29 };
+const u32 wheel[8] = { 1, 7, 11, 13, 17, 19, 23, 29 };
 
 void mark_multiples(u8 *sieve, u32 sieve_size, struct prime *prime)
 {
     u32 i, i2, i4, i6;
+    u32 interval;
     u32 limit;
 
     i = prime->offset;
@@ -26,9 +27,9 @@ void mark_multiples(u8 *sieve, u32 sieve_size, struct prime *prime)
     i4 = i2 * 2;
     i6 = i4 + i2;
 
-    /* prime->index * 30 + wheel[prime->bit] - (i2 + 1) */
-    limit = prime->index * 28 + wheel[prime->bit] - 1;
-    limit = (limit < sieve_size) ? sieve_size - limit : 0;
+    /* Same as prime->index * 30 + wheel[prime->bit] - (i2 + 1). */
+    interval = prime->index * 28 + wheel[prime->bit] - 1;
+    limit = (interval >= sieve_size) ? 0 : sieve_size - interval;
 
     switch (prime->bit * 8 + prime->step) {
     case 0:     do {    if (i >= sieve_size) goto L0;
