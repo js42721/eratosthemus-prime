@@ -1,5 +1,5 @@
 CC     = gcc
-CFLAGS = -O3
+CFLAGS = -O2
 LDLIBS = -lm
 OBJS   = magic.o main.o prime.o sieve.o utils.o wheel.o
 TARGET = primecounter

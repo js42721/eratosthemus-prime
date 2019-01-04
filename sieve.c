@@ -37,7 +37,6 @@ static struct prime *bootstrap(u32 upper, u32 *count)
     u8 *sieve;
     u32 sieve_size;
     u32 sieve_limit;
-    u32 offset;
     u32 pi;
     u32 i, j;
 
@@ -56,27 +55,23 @@ static struct prime *bootstrap(u32 upper, u32 *count)
     memset(sieve, 0xff, sieve_size);
     sieve[0] = 0xfe; /* Marks 1 as not prime. */
 
-    for (i = 0; i <= sieve_limit; ++i) {
+    for (i = 0; i <= sieve_limit; ++i)
         for (j = 0; j < 8; ++j) {
             if (!IS_PRIME(sieve[i], j))
                 continue;
             /* Starts at the square. */
-            offset = square_index(i, j);
-            init_prime(&primes[pi], i, j, j, offset);
+            init_prime(&primes[pi], i, j, j, square_index(i, j));
             mark_multiples(sieve, sieve_size, &primes[pi]);
             ++pi;
         }
-    }
 
-    for (i = sieve_limit + 1; i < sieve_size; ++i) {
+    for (i = sieve_limit + 1; i < sieve_size; ++i)
         for (j = 0; j < 8; ++j) {
             if (!IS_PRIME(sieve[i], j))
                 continue;
-            offset = square_index(i, j);
-            init_prime(&primes[pi], i, j, j, offset - sieve_size);
+            init_prime(&primes[pi], i, j, j, square_index(i, j) - sieve_size);
             ++pi;
         }
-    }
 
     *count = pi;
 
@@ -138,6 +133,7 @@ s32 sieve(u32 upper, u32 sieve_size)
     for (i = 8; i--;) {
         if (!IS_PRIME(sieve[last], i))
             continue;
+        /* None of the numbers that would cause overflow here are prime. */
         if (numeric_val(limit - 1, i) <= upper)
             break;
         --result;

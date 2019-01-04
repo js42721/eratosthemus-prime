@@ -10,7 +10,7 @@
 
 int main(int argc, char **argv)
 {
-    s32 ans;
+    s32 result;
     u32 upper;
     clock_t start, end;
     double elapsed;
@@ -27,18 +27,18 @@ int main(int argc, char **argv)
 
     start = clock();
 
-    ans = sieve(upper, SIEVE_SIZE);
+    result = sieve(upper, SIEVE_SIZE);
 
     end = clock();
 
-    if (ans == -1) {
+    if (result == -1) {
         fprintf(stderr, "Memory allocation failed\n");
         return EXIT_FAILURE;
     }
 
     elapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
-    printf("pi(%"PRIu32") = %"PRId32"\n", upper, ans);
+    printf("pi(%"PRIu32") = %"PRId32"\n", upper, result);
     printf("Elapsed time: %f s\n", elapsed);
 
     return 0;
