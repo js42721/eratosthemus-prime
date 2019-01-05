@@ -18,10 +18,8 @@ void mark_multiples(u8 *sieve, u32 sieve_size, struct prime *prime)
     u32 limit;
 
     i = prime->offset;
-    if (i >= sieve_size) {
-        prime->offset -= sieve_size;
-        return;
-    }
+    if (i >= sieve_size)
+        goto out;
 
     i2 = prime->index * 2;
     i4 = i2 * 2;
