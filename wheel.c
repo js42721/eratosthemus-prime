@@ -25,8 +25,7 @@ void mark_multiples(u8 *sieve, u32 sieve_size, struct prime *prime)
     i4 = i2 * 2;
     i6 = i4 + i2;
 
-    /* Same as prime->index * 30 + wheel[prime->bit] - (i2 + 1). */
-    interval = prime->index * 28 + wheel[prime->bit] - 1;
+    interval = prime->index * 30 + wheel[prime->bit] - (i2 + 1);
     limit = (interval >= sieve_size) ? 0 : sieve_size - interval;
 
     switch (prime->bit * 8 + prime->step) {
