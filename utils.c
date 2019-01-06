@@ -10,13 +10,13 @@ static const u32 b[256] =
     B6(0), B6(1), B6(1), B6(2)
 };
 
-u32 popcount(u8 *a, u32 start, u32 end)
+u32 popcount(u8 *a, u32 n)
 {
     u32 result;
     u32 i;
 
     result = 0;
-    for (i = start; i < end; ++i)
+    for (i = 0; i < n; ++i)
         result += b[a[i]];
 
     return result;

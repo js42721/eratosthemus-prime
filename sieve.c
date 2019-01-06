@@ -11,7 +11,7 @@
 
 #define IS_PRIME(b, n) ((b) & (1 << (n)))
 
-/* pi(x) for x <= 29. */
+/* pi(x) for x < 30. */
 static const u32 small[30] =
 {
     0, 0, 1, 2, 2, 3, 3, 4, 4, 4, 4, 5, 5, 6, 6,
@@ -20,14 +20,14 @@ static const u32 small[30] =
 
 static const u32 z[8] = { 0, 1, 4, 5, 9, 12, 17, 28 };
 
-static u32 numeric_val(u32 index, u32 bit)
+static u32 numeric_val(u32 div, u32 mod)
 {
-    return index * 30 + wheel[bit];
+    return div * 30 + wheel[mod];
 }
 
-static u32 square_index(u32 index, u32 bit)
+static u32 find_square(u32 div, u32 mod)
 {
-    return index * (index * 30 + wheel[bit] * 2) + z[bit];
+    return div * (div * 30 + wheel[mod] * 2) + z[mod];
 }
 
 static struct prime *bootstrap(u32 upper, u32 *count)
@@ -60,7 +60,7 @@ static struct prime *bootstrap(u32 upper, u32 *count)
             if (!IS_PRIME(sieve[i], j))
                 continue;
             /* Starts at the square. */
-            init_prime(&primes[pi], i, j, j, square_index(i, j));
+            init_prime(&primes[pi], i, j, j, find_square(i, j));
             mark_multiples(sieve, sieve_size, &primes[pi]);
             ++pi;
         }
@@ -69,7 +69,7 @@ static struct prime *bootstrap(u32 upper, u32 *count)
         for (j = 0; j < 8; ++j) {
             if (!IS_PRIME(sieve[i], j))
                 continue;
-            init_prime(&primes[pi], i, j, j, square_index(i, j) - sieve_size);
+            init_prime(&primes[pi], i, j, j, find_square(i, j) - sieve_size);
             ++pi;
         }
 
@@ -96,10 +96,10 @@ s32 sieve(u32 upper, u32 sieve_size)
     u32 primes_size;
     u32 mask_size;
     u32 limit;
-    u32 last;
+    u32 end;
     u32 i, j;
 
-    if (upper <= 29)
+    if (upper < 30)
         return small[upper];
 
     result = -1;
@@ -124,14 +124,14 @@ s32 sieve(u32 upper, u32 sieve_size)
         apply_magic_mask(sieve, sieve_size, mask, mask_size, i);
         for (j = MAGIC_MASK_PRIMES; j < primes_size; ++j)
             mark_multiples(sieve, sieve_size, &primes[j]);
-        result += popcount(sieve, 0, sieve_size);
+        result += popcount(sieve, sieve_size);
     }
 
-    last = limit - (i - sieve_size) - 1;
+    end = limit - (i - sieve_size);
 
     /* Excludes excess primes found in the last byte. */
     for (i = 8; i--;) {
-        if (!IS_PRIME(sieve[last], i))
+        if (!IS_PRIME(sieve[end - 1], i))
             continue;
         /* None of the numbers that would cause overflow here are prime. */
         if (numeric_val(limit - 1, i) <= upper)
@@ -140,7 +140,7 @@ s32 sieve(u32 upper, u32 sieve_size)
     }
 
     /* Excludes excess primes found in the rest of the last segment. */
-    result -= popcount(sieve, last + 1, sieve_size);
+    result -= popcount(&sieve[end], sieve_size - end);
 
     free(sieve);
 cleanup_primes:

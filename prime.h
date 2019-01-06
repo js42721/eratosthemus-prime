@@ -5,12 +5,12 @@
 
 struct prime
 {
-    u32 index  : 29;
-    u32 bit    :  3;
+    u32 div    : 29;
+    u32 mod    :  3;
     u32 step   :  3;
     u32 offset : 29;
 };
 
-void init_prime(struct prime *p, u32 index, u32 bit, u32 step, u32 offset);
+void init_prime(struct prime *p, u32 div, u32 mod, u32 step, u32 offset);
 
 #endif

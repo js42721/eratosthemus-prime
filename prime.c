@@ -1,9 +1,9 @@
 #include "prime.h"
 
-void init_prime(struct prime *p, u32 index, u32 bit, u32 step, u32 offset)
+void init_prime(struct prime *p, u32 div, u32 mod, u32 step, u32 offset)
 {
-    p->index  = index;
-    p->bit    = bit;
-    p->step   = step;
+    p->div = div;
+    p->mod = mod;
+    p->step = step;
     p->offset = offset;
 }

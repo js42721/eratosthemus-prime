@@ -21,14 +21,14 @@ void mark_multiples(u8 *sieve, u32 sieve_size, struct prime *prime)
     if (i >= sieve_size)
         goto out;
 
-    i2 = prime->index * 2;
+    i2 = prime->div * 2;
     i4 = i2 * 2;
     i6 = i4 + i2;
 
-    interval = prime->index * 30 + wheel[prime->bit] - (i2 + 1);
+    interval = prime->div * 30 + wheel[prime->mod] - (i2 + 1);
     limit = (interval >= sieve_size) ? 0 : sieve_size - interval;
 
-    switch (prime->bit * 8 + prime->step) {
+    switch (prime->mod * 8 + prime->step) {
     case 0:     do {    if (i >= sieve_size)
                             goto s0;
                         sieve[i] &= M0; i += i6;
