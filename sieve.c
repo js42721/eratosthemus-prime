@@ -37,8 +37,7 @@ static struct prime *bootstrap(u32 upper, u32 *count)
     u8 *sieve;
     u32 sieve_size;
     u32 sieve_limit;
-    u32 pi;
-    u32 i, j;
+    u32 i, j, k;
 
     sieve_size = upper / 30 + 1;
     sieve = malloc(sieve_size);
@@ -50,33 +49,33 @@ static struct prime *bootstrap(u32 upper, u32 *count)
     if (!primes)
         goto cleanup_sieve;
 
-    pi = 0;
-    sieve_limit = sqrt(upper) / 30;
+    k = 0;
+    sieve_limit = sqrt(upper) / 30 + 1;
     memset(sieve, 0xff, sieve_size);
     sieve[0] = 0xfe; /* Marks 1 as not prime. */
 
-    for (i = 0; i <= sieve_limit; ++i)
+    for (i = 0; i < sieve_limit; ++i)
         for (j = 0; j < 8; ++j) {
             if (!IS_PRIME(sieve[i], j))
                 continue;
             /* Starts at the square. */
-            init_prime(&primes[pi], i, j, j, find_square(i, j));
-            mark_multiples(sieve, sieve_size, &primes[pi]);
-            ++pi;
+            init_prime(&primes[k], i, j, j, find_square(i, j));
+            mark_multiples(sieve, sieve_size, &primes[k]);
+            ++k;
         }
 
-    for (i = sieve_limit + 1; i < sieve_size; ++i)
+    for (; i < sieve_size; ++i)
         for (j = 0; j < 8; ++j) {
             if (!IS_PRIME(sieve[i], j))
                 continue;
-            init_prime(&primes[pi], i, j, j, find_square(i, j) - sieve_size);
-            ++pi;
+            init_prime(&primes[k], i, j, j, find_square(i, j) - sieve_size);
+            ++k;
         }
 
-    *count = pi;
+    *count = k;
 
     /* It's okay if the trim fails. */
-    trimmed = realloc(primes, pi * sizeof(*primes));
+    trimmed = realloc(primes, k * sizeof(*primes));
     if (trimmed)
         primes = trimmed;
 
