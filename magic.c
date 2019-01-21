@@ -3,66 +3,66 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils.h"
 #include "wheel.h"
 
-u8 *magic_mask(u32 *mask_size)
+u8 *magic_new(u32 *size)
 {
-    struct prime p;
-    u8 *mask;
+    prime p;
+    u8 *m;
     u32 lcm;
     u32 i;
 
     lcm = 1;
-    for (i = 1; i <= MAGIC_MASK_PRIMES; ++i)
+    for (i = 1; i <= MAGIC_PRIMES; ++i)
         lcm *= wheel[i];
 
-    mask = malloc(lcm);
-    if (!mask)
-        return NULL;
+    m = ez_malloc(lcm);
 
-    *mask_size = lcm;
-    memset(mask, 0xff, lcm);
+    *size = lcm;
+    memset(m, 0xff, lcm);
 
-    for (i = 1; i <= MAGIC_MASK_PRIMES; ++i) {
+    for (i = 1; i <= MAGIC_PRIMES; ++i) {
         init_prime(&p, 0, i, 0, 0);
-        mark_multiples(mask, lcm, &p);
+        mark_multiples(&p, m, lcm);
     }
 
-    return mask;
+    return m;
 }
 
-void apply_magic_mask(u8 *sieve,
-                      u32 sieve_size,
-                      u8 *mask,
-                      u32 mask_size,
-                      u32 index)
+void magic_apply(u8 *m, u32 m_size, u8 *dst, u32 dst_size, u64 i)
 {
-    u32 sieve_remainder;
-    u32 mask_remainder;
-    u32 limit;
+    u32 m_rem;
+    u32 dst_rem;
     u32 mi;
+    u32 limit;
 
-    mi = index % mask_size;
-    mask_remainder = mask_size - mi;
-    if (mask_remainder >= sieve_size) {
-        memcpy(sieve, &mask[mi], sieve_size);
+    mi = i % m_size;
+    m_rem = m_size - mi;
+    if (m_rem >= dst_size) {
+        memcpy(dst, &m[mi], dst_size);
         return;
     }
 
-    memcpy(sieve, &mask[mi], mask_remainder);
+    memcpy(dst, &m[mi], m_rem);
 
-    sieve_remainder = sieve_size - mask_remainder;
-    if (sieve_remainder <= mask_size) {
-        memcpy(&sieve[mask_remainder], mask, sieve_remainder);
+    dst_rem = dst_size - m_rem;
+    if (dst_rem <= m_size) {
+        memcpy(&dst[m_rem], m, dst_rem);
         return;
     }
 
-    mi = mask_remainder;
-    limit = sieve_size - mask_size;
+    mi = m_rem;
+    limit = dst_size - m_size;
     do {
-        memcpy(&sieve[mi], mask, mask_size);
-        mi += mask_size;
+        memcpy(&dst[mi], m, m_size);
+        mi += m_size;
     } while (mi < limit);
 
-    memcpy(&sieve[mi], mask, sieve_size - mi);
+    memcpy(&dst[mi], m, dst_size - mi);
+}
+
+void magic_free(u8 *m)
+{
+    free(m);
 }

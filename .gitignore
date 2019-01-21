@@ -1,5 +1,6 @@
 *.o
-primecounter
+eratosthemus-count
+eratosthemus-gen
 
 # Eclipse
 .project

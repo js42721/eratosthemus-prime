@@ -11,24 +11,32 @@
 
 const u32 wheel[8] = { 1, 7, 11, 13, 17, 19, 23, 29 };
 
-void mark_multiples(u8 *sieve, u32 sieve_size, struct prime *prime)
+void init_prime(prime *p, u32 div, u32 mod, u32 step, u32 offset)
+{
+    p->div = div;
+    p->mod = mod;
+    p->step = step;
+    p->offset = offset;
+}
+
+void mark_multiples(prime *p, u8 *sieve, u32 sieve_size)
 {
     u32 i, i2, i4, i6;
     u32 interval;
     u32 limit;
 
-    i = prime->offset;
+    i = p->offset;
     if (i >= sieve_size)
         goto out;
 
-    i2 = prime->div * 2;
+    i2 = p->div * 2;
     i4 = i2 * 2;
     i6 = i4 + i2;
 
-    interval = prime->div * 30 + wheel[prime->mod] - (i2 + 1);
+    interval = p->div * 30 + wheel[p->mod] - (i2 + 1);
     limit = (interval >= sieve_size) ? 0 : sieve_size - interval;
 
-    switch (prime->mod * 8 + prime->step) {
+    switch (p->mod * 8 + p->step) {
     case 0:     do {    if (i >= sieve_size)
                             goto s0;
                         sieve[i] &= M0; i += i6;
@@ -326,14 +334,14 @@ void mark_multiples(u8 *sieve, u32 sieve_size, struct prime *prime)
                 } while (1);
     }
 
-s0: prime->step = 0; goto out;
-s1: prime->step = 1; goto out;
-s2: prime->step = 2; goto out;
-s3: prime->step = 3; goto out;
-s4: prime->step = 4; goto out;
-s5: prime->step = 5; goto out;
-s6: prime->step = 6; goto out;
-s7: prime->step = 7; goto out;
+s0: p->step = 0; goto out;
+s1: p->step = 1; goto out;
+s2: p->step = 2; goto out;
+s3: p->step = 3; goto out;
+s4: p->step = 4; goto out;
+s5: p->step = 5; goto out;
+s6: p->step = 6; goto out;
+s7: p->step = 7; goto out;
 out:
-    prime->offset = i - sieve_size;
+    p->offset = i - sieve_size;
 }

@@ -1,151 +1,248 @@
 #include "sieve.h"
 
 #include <math.h>
+#include <omp.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "magic.h"
-#include "prime.h"
+#include "segment.h"
 #include "utils.h"
-#include "wheel.h"
 
-#define IS_PRIME(b, n) ((b) & (1 << (n)))
+#define MAX_UPPER 18446744073709551600u /* (2^64 - 1) / 30 x 30 */
 
-/* pi(x) for x < 30. */
-static const u32 small[30] =
+typedef struct kit
 {
-    0, 0, 1, 2, 2, 3, 3, 4, 4, 4, 4, 5, 5, 6, 6,
-    6, 6, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10
+    u8  *magic;
+    u32  magic_size;
+    u32 *primes;
+    u32  primes_size;
+} kit;
+
+static const u32 pi[30] =
+{
+    0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
+    4, 5, 5, 6, 6, 6, 6, 7, 7, 8,
+    8, 8, 8, 9, 9, 9, 9, 9, 9, 10
 };
 
-static const u32 z[8] = { 0, 1, 4, 5, 9, 12, 17, 28 };
+static const u32 small[10] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 };
 
-static u32 numeric_val(u32 div, u32 mod)
+static void enlist_prime(void *ctx, u64 prime)
 {
-    return div * 30 + wheel[mod];
+    kit *k;
+
+    k = (kit *)ctx;
+    k->primes[k->primes_size++] = prime;
 }
 
-static u32 find_square(u32 div, u32 mod)
+static kit *kit_new(u32 upper, u32 segment_size)
 {
-    return div * (div * 30 + wheel[mod] * 2) + z[mod];
-}
-
-static struct prime *bootstrap(u32 upper, u32 *count)
-{
-    struct prime *primes;
-    struct prime *trimmed;
-    u8 *sieve;
-    u32 sieve_size;
-    u32 sieve_limit;
-    u32 i, j, k;
-
-    sieve_size = upper / 30 + 1;
-    sieve = malloc(sieve_size);
-    if (!sieve)
-        return NULL;
-
-    /* The extra space is for excess primes in the last byte. */
-    primes = malloc((pi_upper(upper) + 7) * sizeof(*primes));
-    if (!primes)
-        goto cleanup_sieve;
-
-    k = 0;
-    sieve_limit = sqrt(upper) / 30 + 1;
-    memset(sieve, 0xff, sieve_size);
-    sieve[0] = 0xfe; /* Marks 1 as not prime. */
-
-    for (i = 0; i < sieve_limit; ++i)
-        for (j = 0; j < 8; ++j) {
-            if (!IS_PRIME(sieve[i], j))
-                continue;
-            /* Starts at the square. */
-            init_prime(&primes[k], i, j, j, find_square(i, j));
-            mark_multiples(sieve, sieve_size, &primes[k]);
-            ++k;
-        }
-
-    for (; i < sieve_size; ++i)
-        for (j = 0; j < 8; ++j) {
-            if (!IS_PRIME(sieve[i], j))
-                continue;
-            init_prime(&primes[k], i, j, j, find_square(i, j) - sieve_size);
-            ++k;
-        }
-
-    *count = k;
-
-    /* It's okay if the trim fails. */
-    trimmed = realloc(primes, k * sizeof(*primes));
-    if (trimmed)
-        primes = trimmed;
-
-cleanup_sieve:
-    free(sieve);
-
-    return primes;
-}
-
-s32 sieve(u32 upper, u32 sieve_size)
-{
-    struct prime *primes;
-    u8 *mask;
-    u8 *sieve;
-    s32 result;
+    kit *k;
+    segment *s;
     u32 sqrt_upper;
-    u32 primes_size;
-    u32 mask_size;
     u32 limit;
     u32 end;
-    u32 i, j;
+    u32 i;
 
-    if (upper < 30)
-        return small[upper];
-
-    result = -1;
-
-    mask = magic_mask(&mask_size);
-    if (!mask)
-        goto out;
+    k = ez_malloc(sizeof(*k));
+    k->magic = magic_new(&k->magic_size);
+    k->primes = ez_malloc(pi_upper(upper) * sizeof(*k->primes));
+    k->primes_size = 0;
 
     sqrt_upper = sqrt(upper);
-    primes = bootstrap(sqrt_upper, &primes_size);
-    if (!primes)
-        goto cleanup_mask;
 
-    sieve = malloc(sieve_size);
-    if (!sieve)
-        goto cleanup_primes;
+    /* Non-segmented bootstrap sieve. */
+    s = segment_bootstrap(sqrt_upper, k->magic, k->magic_size);
+    segment_extract(s, enlist_prime, k);
+    segment_free(s);
 
-    result = primes_size + 3;
-    limit = upper / 30 + 1;
+    s = segment_new(segment_size);
+    end = (upper - 1) / 30 + 1;
+    limit = (end < segment_size) ? 0 : end - (segment_size - 1);
 
-    for (i = sqrt_upper / 30 + 1; i < limit; i += sieve_size) {
-        apply_magic_mask(sieve, sieve_size, mask, mask_size, i);
-        for (j = MAGIC_MASK_PRIMES; j < primes_size; ++j)
-            mark_multiples(sieve, sieve_size, &primes[j]);
-        result += popcount(sieve, sieve_size);
+    /* Starts segmented sieving from where the bootstrap sieve left off. */
+    for (i = sqrt_upper / 30 + 1; i < limit; i += segment_size) {
+        segment_init(s, k->magic, k->magic_size, i, i + segment_size);
+        segment_sieve(s, k->primes, k->primes_size);
+        segment_extract(s, enlist_prime, k);
     }
 
-    end = limit - (i - sieve_size);
-
-    /* Excludes excess primes found in the last byte. */
-    for (i = 8; i--;) {
-        if (!IS_PRIME(sieve[end - 1], i))
-            continue;
-        /* None of the numbers that would cause overflow here are prime. */
-        if (numeric_val(limit - 1, i) <= upper)
-            break;
-        --result;
+    if (i < end) {
+        segment_init(s, k->magic, k->magic_size, i, end);
+        segment_sieve(s, k->primes, k->primes_size);
+        segment_trim_upper(s, upper);
+        segment_extract(s, enlist_prime, k);
     }
 
-    /* Excludes excess primes found in the rest of the last segment. */
-    result -= popcount(&sieve[end], sieve_size - end);
+    segment_free(s);
 
-    free(sieve);
-cleanup_primes:
-    free(primes);
-cleanup_mask:
-    free(mask);
-out:
+    k->primes = ez_realloc(k->primes, k->primes_size * sizeof(*k->primes));
+
+    return k;
+}
+
+static void kit_free(kit *k)
+{
+    free(k->magic);
+    free(k->primes);
+    free(k);
+}
+
+/* lower >= 30, upper <= MAX_UPPER */
+static u64 sieve_count_range(kit *k, u64 lower, u64 upper, u32 segment_size)
+{
+    segment *s;
+    u64 result;
+    u64 start;
+    u64 end;
+    u64 limit;
+    u64 i;
+
+    result = 0;
+    start = lower / 30;
+    end = (upper - 1) / 30 + 1;
+    limit = (end < segment_size) ? 0 : end - (segment_size - 1);
+
+    /* Segment upper bound must be exact to prevent overflow. */
+    s = segment_new(segment_size);
+    segment_init(s, k->magic, k->magic_size,
+                 start, MIN(start + segment_size, end));
+    segment_sieve(s, k->primes, k->primes_size);
+    segment_trim_lower(s, lower);
+
+    for (i = start + segment_size; i < limit; i += segment_size) {
+        result += segment_count(s);
+        segment_init(s, k->magic, k->magic_size, i, i + segment_size);
+        segment_sieve(s, k->primes, k->primes_size);
+    }
+
+    if (i < end) {
+        result += segment_count(s);
+        segment_init(s, k->magic, k->magic_size, i, end);
+        segment_sieve(s, k->primes, k->primes_size);
+    }
+
+    segment_trim_upper(s, upper);
+    result += segment_count(s);
+    segment_free(s);
+
     return result;
+}
+
+/* lower >= 30, upper <= MAX_UPPER */
+static void sieve_generate_range(kit *k,
+                                 u64 lower,
+                                 u64 upper,
+                                 u32 segment_size,
+                                 callback cb,
+                                 void *ctx)
+{
+    segment *s;
+    u64 start;
+    u64 end;
+    u64 limit;
+    u64 i;
+
+    start = lower / 30;
+    end = (upper - 1) / 30 + 1;
+    limit = (end < segment_size) ? 0 : end - (segment_size - 1);
+
+    s = segment_new(segment_size);
+    segment_init(s, k->magic, k->magic_size,
+                 start, MIN(start + segment_size, end));
+    segment_sieve(s, k->primes, k->primes_size);
+    segment_trim_lower(s, lower);
+
+    for (i = start + segment_size; i < limit; i += segment_size) {
+        segment_extract(s, cb, ctx);
+        segment_init(s, k->magic, k->magic_size, i, i + segment_size);
+        segment_sieve(s, k->primes, k->primes_size);
+    }
+
+    if (i < end) {
+        segment_extract(s, cb, ctx);
+        segment_init(s, k->magic, k->magic_size, i, end);
+        segment_sieve(s, k->primes, k->primes_size);
+    }
+
+    segment_trim_upper(s, upper);
+    segment_extract(s, cb, ctx);
+    segment_free(s);
+}
+
+u64 sieve_count(u64 lower, u64 upper, u32 segment_size, u32 max_threads)
+{
+    kit *k;
+    u64 result;
+    u64 range;
+    u64 segments;
+    u32 threads;
+    u64 interval;
+    u64 start;
+    u64 end;
+    u32 i;
+
+    if (lower > upper || lower > MAX_UPPER)
+        return 0;
+
+    lower = MAX(lower, 1);
+
+    if (upper < 30)
+        return pi[upper] - pi[lower - 1];
+
+    result = (lower >= 30) ? 0 : 10 - pi[lower - 1];
+    lower = MAX(lower, 30);
+    upper = MIN(upper, MAX_UPPER);
+
+    k = kit_new(sqrtl(upper), segment_size);
+
+    range = upper - lower;
+    segments = ceill((long double)range / (segment_size * 30));
+    threads = omp_get_num_procs();
+    threads = MIN(threads, segments);
+    threads = MIN(threads, max_threads);
+    threads = MAX(threads, 1);
+    omp_set_num_threads(threads);
+    interval = ceill((long double)range / threads);
+
+    #pragma omp parallel for reduction(+: result) private(start, end)
+    for (i = 0; i < threads; ++i) {
+        start = lower + (interval * i);
+        end = (start + interval >= upper) ? upper : start + (interval - 1);
+        result += sieve_count_range(k, start, end, segment_size);
+    }
+
+    kit_free(k);
+
+    return result;
+}
+
+void sieve_generate(u64 lower,
+                    u64 upper,
+                    u32 segment_size,
+                    callback cb,
+                    void *ctx)
+{
+    kit *k;
+    u32 i;
+
+    if (lower > upper || lower > MAX_UPPER)
+        return;
+
+    if (lower < 30)
+        for (i = 0; i < 10; ++i) {
+            if (upper < small[i])
+                return;
+            if (lower <= small[i])
+                cb(ctx, small[i]);
+        }
+
+    lower = MAX(lower, 30);
+    upper = MIN(upper, MAX_UPPER);
+
+    k = kit_new(sqrtl(upper), segment_size);
+
+    sieve_generate_range(k, lower, upper, segment_size, cb, ctx);
+
+    kit_free(k);
 }
