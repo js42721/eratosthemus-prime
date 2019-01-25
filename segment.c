@@ -210,6 +210,9 @@ void segment_trim_lower(segment *s, u64 lower)
     u32 start;
     u32 i;
 
+    if (s->size == 0)
+        return;
+
     start = step_finder[lower % 30];
 
     for (i = 0; i < start; ++i)
@@ -220,6 +223,9 @@ void segment_trim_upper(segment *s, u64 upper)
 {
     u32 end;
     u32 i;
+
+    if (s->size == 0)
+        return;
 
     end = step_finder[(upper + 1) % 30];
     if (end == 0)
