@@ -103,7 +103,6 @@ static u64 sieve_count_range(kit *k, u64 lower, u64 upper, u32 segment_size)
     end = (upper - 1) / 30 + 1;
     limit = (end < segment_size) ? 0 : end - (segment_size - 1);
 
-    /* Segment upper bound must be exact to prevent overflow. */
     s = segment_new(segment_size);
     segment_init(s, k->magic, k->magic_size,
                  start, MIN(start + segment_size, end));
