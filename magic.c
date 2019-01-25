@@ -18,14 +18,14 @@ u8 *magic_new(u32 *size)
         lcm *= wheel[i];
 
     m = ez_malloc(lcm);
-
-    *size = lcm;
     memset(m, 0xff, lcm);
 
     for (i = 1; i <= MAGIC_PRIMES; ++i) {
         init_prime(&p, 0, i, 0, 0);
         mark_multiples(&p, m, lcm);
     }
+
+    *size = lcm;
 
     return m;
 }

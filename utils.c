@@ -17,7 +17,6 @@ u32 popcount(u8 *a, u32 n)
     u32 i;
 
     result = 0;
-
     for (i = 0; i < n; ++i)
         result += popcount8[a[i]];
 

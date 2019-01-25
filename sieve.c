@@ -83,7 +83,7 @@ static kit *kit_new(u32 upper, u32 segment_size)
 
 static void kit_free(kit *k)
 {
-    free(k->magic);
+    magic_free(k->magic);
     free(k->primes);
     free(k);
 }

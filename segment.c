@@ -91,7 +91,7 @@ static const s8 set_bits[256][8] =
     {4,5,6,7,-1},      {0,4,5,6,7,-1},    {1,4,5,6,7,-1},    {0,1,4,5,6,7,-1},
     {2,4,5,6,7,-1},    {0,2,4,5,6,7,-1},  {1,2,4,5,6,7,-1},  {0,1,2,4,5,6,7,-1},
     {3,4,5,6,7,-1},    {0,3,4,5,6,7,-1},  {1,3,4,5,6,7,-1},  {0,1,3,4,5,6,7,-1},
-    {2,3,4,5,6,7,-1},  {0,2,3,4,5,6,7,-1},{1,2,3,4,5,6,7,-1},{/*0-7,*/-1}
+    {2,3,4,5,6,7,-1},  {0,2,3,4,5,6,7,-1},{1,2,3,4,5,6,7,-1},{/*0,1,...,7,*/-1}
 };
 
 static u32 find_square(u32 div, u32 mod)
@@ -130,7 +130,7 @@ segment *segment_bootstrap(u32 upper, u8 *magic, u32 magic_size)
      * not be extracted. This is good since it saves us the trouble of having
      * to skip those primes later.
      */
-    for (i = 0; i < s->size; ++i) {
+    for (i = 0; i < size; ++i) {
         val = s->data[i];
         if (val == 0)
             continue;
@@ -139,11 +139,11 @@ segment *segment_bootstrap(u32 upper, u8 *magic, u32 magic_size)
         j = 1;
         do {
             square = find_square(i, pos);
-            if (square >= s->size)
+            if (square >= size)
                 return s;
 
             init_prime(&p, i, pos, pos, square);
-            mark_multiples(&p, s->data, s->size);
+            mark_multiples(&p, s->data, size);
             pos = set_bits[val][j++];
         } while (pos != -1);
     }
@@ -207,25 +207,25 @@ void segment_sieve(segment *s, u32 *primes, u32 primes_size)
 
 void segment_trim_lower(segment *s, u64 lower)
 {
-    u32 first;
+    u32 start;
     u32 i;
 
-    first = step_finder[lower % 30];
+    start = step_finder[lower % 30];
 
-    for (i = 0; i < first; ++i)
+    for (i = 0; i < start; ++i)
         s->data[0] &= ~(1 << i);
 }
 
 void segment_trim_upper(segment *s, u64 upper)
 {
-    u32 last;
+    u32 end;
     u32 i;
 
-    last = step_finder[(upper + 1) % 30];
-    if (last == 0)
+    end = step_finder[(upper + 1) % 30];
+    if (end == 0)
         return;
 
-    for (i = last; i < 8; ++i)
+    for (i = end; i < 8; ++i)
         s->data[s->size - 1] &= ~(1 << i);
 }
 
