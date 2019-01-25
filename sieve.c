@@ -41,13 +41,12 @@ static kit *kit_new(u32 upper, u32 segment_size)
     segment *s;
     u32 sqrt_upper;
     u32 limit;
-    u32 start;
     u32 end;
     u32 i;
 
     k = ez_malloc(sizeof(*k));
     k->magic = magic_new(&k->magic_size);
-    k->primes = ez_malloc(pi_upper(upper) * sizeof(*k->primes));
+    k->primes = ez_malloc((pi_upper(upper) + 7) * sizeof(*k->primes));
     k->primes_size = 0;
 
     sqrt_upper = sqrt(upper);
@@ -57,30 +56,23 @@ static kit *kit_new(u32 upper, u32 segment_size)
     segment_extract(s, enlist_prime, k);
     segment_free(s);
 
-    start = sqrt_upper / 30 + 1;
+    s = segment_new(segment_size);
     end = (upper - 1) / 30 + 1;
     limit = (end < segment_size) ? 0 : end - (segment_size - 1);
 
     /* Starts segmented sieving from where the bootstrap sieve left off. */
-    s = segment_new(segment_size);
-    segment_init(s, k->magic, k->magic_size,
-                 start, MIN(start + segment_size, end));
-    segment_sieve(s, k->primes, k->primes_size);
-
-    for (i = start + segment_size; i < limit; i += segment_size) {
-        segment_extract(s, enlist_prime, k);
+    for (i = sqrt_upper / 30 + 1; i < limit; i += segment_size) {
         segment_init(s, k->magic, k->magic_size, i, i + segment_size);
         segment_sieve(s, k->primes, k->primes_size);
+        segment_extract(s, enlist_prime, k);
     }
 
     if (i < end) {
-        segment_extract(s, enlist_prime, k);
         segment_init(s, k->magic, k->magic_size, i, end);
         segment_sieve(s, k->primes, k->primes_size);
+        segment_extract(s, enlist_prime, k);
     }
 
-    segment_trim_upper(s, upper);
-    segment_extract(s, enlist_prime, k);
     segment_free(s);
 
     k->primes = ez_realloc(k->primes, k->primes_size * sizeof(*k->primes));
