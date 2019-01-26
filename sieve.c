@@ -180,27 +180,29 @@ u64 sieve_count(u64 lower, u64 upper, u32 segment_size, u32 max_threads)
     u64 end;
     u32 i;
 
-    if (lower > upper || lower > MAX_UPPER)
-        return 0;
-
-    lower = MAX(lower, 1);
-
-    if (upper < 30)
-        return pi[upper] - pi[lower - 1];
-
-    result = (lower >= 30) ? 0 : 10 - pi[lower - 1];
-    lower = MAX(lower, 30);
     upper = MIN(upper, MAX_UPPER);
+    if (upper < lower)
+        return 0;
+    if (upper < 30)
+        return pi[upper] - pi[MAX(lower, 1) - 1];
+
+    if (lower < 30) {
+        result = 10 - pi[MAX(lower, 1) - 1];
+        lower = 30;
+    } else
+        result = 0;
 
     k = kit_new(sqrtl(upper), segment_size);
 
     range = upper - lower;
     segments = ceill((long double)range / (segment_size * 30));
+
     threads = omp_get_num_procs();
     threads = MIN(threads, segments);
     threads = MIN(threads, max_threads);
     threads = MAX(threads, 1);
     omp_set_num_threads(threads);
+
     interval = ceill((long double)range / threads);
 
     #pragma omp parallel for reduction(+: result) private(start, end)
@@ -224,19 +226,21 @@ void sieve_generate(u64 lower,
     kit *k;
     u32 i;
 
-    if (lower > upper || lower > MAX_UPPER)
+    upper = MIN(upper, MAX_UPPER);
+    if (upper < lower)
         return;
 
-    if (lower < 30)
+    if (lower < 30) {
         for (i = 0; i < 10; ++i) {
             if (upper < small[i])
                 return;
+
             if (lower <= small[i])
                 cb(ctx, small[i]);
         }
 
-    lower = MAX(lower, 30);
-    upper = MIN(upper, MAX_UPPER);
+        lower = 30;
+    }
 
     k = kit_new(sqrtl(upper), segment_size);
 
