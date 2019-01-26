@@ -61,7 +61,7 @@ static kit *kit_new(u32 upper, u32 segment_size)
     limit = (end < segment_size) ? 0 : end - (segment_size - 1);
 
     /* Starts segmented sieving from where the bootstrap sieve left off. */
-    for (i = sqrt_upper / 30 + 1; i < limit; i += segment_size) {
+    for (i = (sqrt_upper - 1) / 30 + 1; i < limit; i += segment_size) {
         segment_init(s, k->magic, k->magic_size, i, i + segment_size);
         segment_sieve(s, k->primes, k->primes_size);
         segment_extract(s, enlist_prime, k);
