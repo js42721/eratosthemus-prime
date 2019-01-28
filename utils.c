@@ -34,12 +34,28 @@ u32 pi_upper(u32 n)
     return (n / log_n) * (1.2762 / log_n + 1);
 }
 
+u32 isqrt(u64 n)
+{
+    u64 result;
+
+    result = sqrt(n);
+    result = MIN(result, UINT32_MAX);
+
+    while (result * result > n)
+        --result;
+
+    /* Same as (result + 1)^2 <= n but without overflow. */
+    while (result * 2 < n - result * result)
+        ++result;
+
+    return result;
+}
+
 void *ez_malloc(size_t n)
 {
     void *result;
 
-    if (n == 0)
-        n = 1;
+    n = MAX(n, 1);
 
     result = malloc(n);
     if (!result) {
@@ -54,8 +70,7 @@ void *ez_realloc(void *p, size_t n)
 {
     void *result;
 
-    if (n == 0)
-        n = 1;
+    n = MAX(n, 1);
 
     result = (!p) ? malloc(n) : realloc(p, n);
     if (!result) {

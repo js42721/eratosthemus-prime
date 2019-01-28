@@ -1,6 +1,5 @@
 #include "sieve.h"
 
-#include <math.h>
 #include <omp.h>
 #include <stdlib.h>
 
@@ -8,7 +7,7 @@
 #include "segment.h"
 #include "utils.h"
 
-#define MAX_UPPER 18446744073709551600u /* (2^64 - 1) / 30 x 30 */
+#define MAX_UPPER 18446744073709551600U /* (2^64 - 1) / 30 * 30 */
 
 typedef struct kit
 {
@@ -49,7 +48,7 @@ static kit *kit_new(u32 upper, u32 segment_size)
     k->primes = ez_malloc((pi_upper(upper) + 7) * sizeof(*k->primes));
     k->primes_size = 0;
 
-    sqrt_upper = sqrt(upper);
+    sqrt_upper = isqrt(upper);
 
     /* Non-segmented bootstrap sieve. */
     s = segment_bootstrap(sqrt_upper, k->magic, k->magic_size);
@@ -173,6 +172,7 @@ u64 sieve_count(u64 lower, u64 upper, u32 segment_size, u32 max_threads)
     kit *k;
     u64 result;
     u64 range;
+    u64 segment;
     u64 segments;
     u32 threads;
     u64 interval;
@@ -192,10 +192,11 @@ u64 sieve_count(u64 lower, u64 upper, u32 segment_size, u32 max_threads)
     } else
         result = 0;
 
-    k = kit_new(sqrtl(upper), segment_size);
+    k = kit_new(isqrt(upper), segment_size);
 
     range = upper - lower;
-    segments = ceill((long double)range / (segment_size * 30));
+    segment = segment_size * 30;
+    segments = range / segment + (range % segment != 0);
 
     threads = omp_get_num_procs();
     threads = MIN(threads, segments);
@@ -203,7 +204,7 @@ u64 sieve_count(u64 lower, u64 upper, u32 segment_size, u32 max_threads)
     threads = MAX(threads, 1);
     omp_set_num_threads(threads);
 
-    interval = ceill((long double)range / threads);
+    interval = range / threads + (range % threads != 0);
 
     #pragma omp parallel for reduction(+: result) private(start, end)
     for (i = 0; i < threads; ++i) {
@@ -242,7 +243,7 @@ void sieve_generate(u64 lower,
         lower = 30;
     }
 
-    k = kit_new(sqrtl(upper), segment_size);
+    k = kit_new(isqrt(upper), segment_size);
 
     sieve_generate_range(k, lower, upper, segment_size, cb, ctx);
 

@@ -172,7 +172,6 @@ void segment_init(segment *s,
 void segment_sieve(segment *s, u32 *primes, u32 primes_size)
 {
     prime p;
-    ldiv_t n_div;
     u32 n;
     u64 intervals;
     u32 remainder;
@@ -181,6 +180,7 @@ void segment_sieve(segment *s, u32 *primes, u32 primes_size)
 
     for (i = 0; i < primes_size; ++i) {
         n = primes[i];
+        /* This assumes the primes are listed in ascending order. */
         if ((u64)n * n >= s->upper)
             return;
 
@@ -196,9 +196,8 @@ void segment_sieve(segment *s, u32 *primes, u32 primes_size)
         if (next >= s->upper || next < s->lower)
             continue;
 
-        n_div = ldiv(n, 30);
-        p.div = n_div.quot;
-        p.mod = step_finder[n_div.rem];
+        p.div = n / 30;
+        p.mod = step_finder[n % 30];
         p.offset = (next - s->lower) / 30;
 
         mark_multiples(&p, s->data, s->size);

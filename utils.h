@@ -13,6 +13,8 @@ u32   popcount(u8 *a, u32 n);
 
 u32   pi_upper(u32 n);
 
+u32   isqrt(u64 n);
+
 void *ez_malloc(size_t n);
 
 void *ez_realloc(void *p, size_t n);
