@@ -1,6 +1,7 @@
 #include "utils.h"
 
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 
 static const u8 popcount8[256] =
