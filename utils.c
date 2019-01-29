@@ -56,9 +56,7 @@ void *ez_malloc(size_t n)
 {
     void *result;
 
-    n = MAX(n, 1);
-
-    result = malloc(n);
+    result = malloc(MAX(n, 1));
     if (!result) {
         perror("Bad malloc");
         exit(EXIT_FAILURE);
@@ -72,7 +70,6 @@ void *ez_realloc(void *p, size_t n)
     void *result;
 
     n = MAX(n, 1);
-
     result = (!p) ? malloc(n) : realloc(p, n);
     if (!result) {
         perror("Bad realloc");
