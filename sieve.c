@@ -208,8 +208,9 @@ u64 sieve_count(u64 lower, u64 upper, u32 segment_size, u32 max_threads)
 
     #pragma omp parallel for reduction(+: result) private(start, end)
     for (i = 0; i < threads; ++i) {
-        start = lower + (interval * i);
-        end = (start + interval >= upper) ? upper : start + (interval - 1);
+        start = lower + interval * i;
+        end = start + interval;
+        end = (end >= upper || end < start) ? upper : end - 1;
         result += sieve_count_range(k, start, end, segment_size);
     }
 
