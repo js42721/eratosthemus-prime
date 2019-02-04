@@ -217,8 +217,9 @@ u64 sieve_count(u64 lower, u64 upper, u32 segment_size, u32 max_threads)
             end = start + (interval + 1) - 1;
         } else {
             start = offset + interval * (i - remainder);
-            end = start + interval;
-            end = (end >= upper || end < start) ? upper : end - 1;
+            end = start + interval - 1;
+            if (end + 1 >= upper || end + 1 < start)
+                end = upper;
         }
         result += sieve_count_range(k, start, end, segment_size);
     }
